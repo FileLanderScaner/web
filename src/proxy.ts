@@ -15,7 +15,8 @@ export const config = {
      * Ejecutar en todas las rutas excepto:
      * - _next/static, _next/image (assets internos)
      * - favicon.ico y archivos de metadatos
+     * - API routes (el callback de auth necesita cookies limpias)
      */
-    '/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)',
+    '/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|api/).*)',
   ],
 }

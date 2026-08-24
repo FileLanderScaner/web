@@ -12,17 +12,32 @@ export async function GET(request: NextRequest): Promise<Response> {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
   const next = searchParams.get('next')
+  const error = searchParams.get('error')
+  const errorDescription = searchParams.get('error_description')
+
+  // Si Google/Supabase devolvió un error
+  if (error) {
+    const msg = errorDescription ?? error
+    return NextResponse.redirect(
+      `${origin}/login?error=${encodeURIComponent(msg)}`,
+    )
+  }
 
   if (code) {
     const supabase = await createClient()
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
 
-    if (!error) {
+    if (!exchangeError) {
       const safeNext = next?.startsWith('/') && !next.startsWith('//') ? next : '/dashboard'
       return NextResponse.redirect(`${origin}${safeNext}`)
     }
+
+    // Error en el exchange - redirigir con mensaje
+    return NextResponse.redirect(
+      `${origin}/login?error=${encodeURIComponent(exchangeError.message)}`,
+    )
   }
 
-  // Si algo falla, al usuario lo enviamos a login con un indicador de error
-  return NextResponse.redirect(`${origin}/login?error=auth_callback`)
+  // No hay code ni error - algo salió mal en el flujo OAuth
+  return NextResponse.redirect(`${origin}/login?error=no_code`)
 }
