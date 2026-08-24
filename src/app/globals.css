@@ -19,6 +19,16 @@
   }
 }
 
+.input {
+  @apply w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200;
+}
+
+@media (prefers-color-scheme: dark) {
+  .input {
+    @apply border-slate-600 bg-slate-700 text-white;
+  }
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
