@@ -22,6 +22,22 @@ export const metadata: Metadata = {
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000',
   ),
+  robots: {
+    index: true,
+    follow: true,
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'es_UY',
+    siteName: site.name,
+    title: `${site.name} — Empleos remotos`,
+    description: site.description,
+  },
+  twitter: {
+    card: 'summary',
+    title: `${site.name} — Empleos remotos`,
+    description: site.description,
+  },
 }
 
 export default function RootLayout({
