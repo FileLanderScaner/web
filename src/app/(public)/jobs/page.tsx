@@ -4,11 +4,20 @@ import { JobCard } from '@/components/jobs/job-card'
 import { SearchBar } from '@/components/jobs/search-bar'
 import { FilterSidebar } from '@/components/jobs/filter-sidebar'
 import { Pagination } from '@/components/jobs/pagination'
+import { ActiveFilters } from '@/components/jobs/active-filters'
 import type { Job, Category } from '@/types/database'
 
 const PAGE_SIZE = 12
 
-export const metadata = { title: 'Empleos remotos' }
+export async function generateMetadata({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const params = await searchParams
+  const parts = ['Empleos remotos']
+  if (params.q) parts.push(`"${params.q}"`)
+  if (params.category) parts.push(params.category)
+  if (params.remote === 'true') parts.push('100% remoto')
+  if (params.experience) parts.push(params.experience)
+  return { title: parts.join(' — ') }
+}
 
 interface JobsPageProps {
   searchParams: Promise<{
@@ -17,6 +26,7 @@ interface JobsPageProps {
     remote?: string
     experience?: string
     employment?: string
+    company?: string
     page?: string
   }>
 }
@@ -30,6 +40,7 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
   const remote = params.remote ?? ''
   const experience = params.experience ?? ''
   const employment = params.employment ?? ''
+  const company = params.company ?? ''
   const page = Math.max(1, parseInt(params.page ?? '1', 10) || 1)
 
   let query = supabase
@@ -52,6 +63,20 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
     query = query.eq('employment_type', employment as 'full_time' | 'part_time' | 'contract' | 'freelance' | 'internship' | 'temporary')
   }
 
+  // Company filter
+  if (company) {
+    const { data: comp } = await supabase
+      .from('companies')
+      .select('id')
+      .eq('slug', company)
+      .single()
+    if (comp) {
+      query = query.eq('company_id', comp.id)
+    } else {
+      query = query.eq('id', '00000000-0000-0000-0000-000000000000')
+    }
+  }
+
   // Category filter via job_categories join
   if (category) {
     const { data: cat } = await supabase
@@ -67,7 +92,6 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
       if (jobIds && jobIds.length > 0) {
         query = query.in('id', jobIds.map((r) => r.job_id))
       } else {
-        // No jobs in this category
         query = query.eq('id', '00000000-0000-0000-0000-000000000000')
       }
     } else {
@@ -98,11 +122,16 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
   if (remote) searchParamsObj.remote = remote
   if (experience) searchParamsObj.experience = experience
   if (employment) searchParamsObj.employment = employment
+  if (company) searchParamsObj.company = company
+
+  const hasFilters = q || category || remote || experience || employment || company
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Empleos remotos</h1>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+          {company ? `Empleos en ${company.replace(/-/g, ' ')}` : 'Empleos remotos'}
+        </h1>
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
           {totalJobs} empleo{totalJobs !== 1 ? 's' : ''} encontrado{totalJobs !== 1 ? 's' : ''}
           {q && <> para &quot;{q}&quot;</>}
@@ -114,6 +143,14 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
           <SearchBar defaultValue={q} />
         </Suspense>
       </div>
+
+      {hasFilters && (
+        <div className="mb-6">
+          <Suspense>
+            <ActiveFilters searchParams={searchParamsObj} />
+          </Suspense>
+        </div>
+      )}
 
       <div className="flex flex-col gap-8 lg:flex-row">
         <Suspense>
