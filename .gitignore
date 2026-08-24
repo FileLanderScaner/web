@@ -42,3 +42,7 @@ next-env.d.ts
 
 # allow example env in repo
 !.env.example
+
+# archivos con secretos locales
+token vercel.txt
+supabase conect.txt
